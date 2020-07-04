@@ -99,15 +99,8 @@ public:
       wf_output->connect_signal("view-self-request-focus",
                                 &view_self_request_focus);
 
-      wf_output->connect_signal("view-hints-changed",
-                                &view_hints_changed);
-
       LOG(wf::log::LOG_LEVEL_ERROR, "output connected ");
       connected_wf_outputs.insert(wf_output);
-
-      if (wf_output->workspace->above_layer == nullptr)
-        wf_output->workspace->above_layer = wf_output->workspace->create_sublayer(wf::LAYER_WORKSPACE,
-                                                                                  wf::SUBLAYER_DOCKED_ABOVE);
 
       // nonstd::observer_ptr<wf::sublayer_t> sticky_layer;
       // sticky_layer = wf_output->workspace->create_sublayer(wf::LAYER_WORKSPACE,
@@ -295,7 +288,7 @@ public:
     }
     GVariant *signal_data = g_variant_new("(us)",
                                           m_view->get_id(),
-                                          m_view->get_app_id());
+                                          m_view->get_app_id().c_str());
     g_variant_ref(signal_data);
     bus_emit_signal("view_app_id_changed", signal_data);
 
@@ -350,20 +343,6 @@ public:
     wf::output_t *old_output = signal->old_output;
     wf::output_t *new_output = signal->new_output;
 
-    if (view->desired_layer == 1)
-    {
-      LOG(wf::log::LOG_LEVEL_ERROR, "view_output_movedmove SUBLAYER!!!");
-
-      // nonstd::observer_ptr<wf::sublayer_t> sticky_layer;
-      // sticky_layer = new_output->workspace->create_sublayer(wf::LAYER_WORKSPACE,
-      //  wf::SUBLAYER_DOCKED_ABOVE);
-      //  sticky_layer = get_sticky_layer_from_output_id(new_output->get_id());
-      // workspace->above_layer = create_sublayer(wf::LAYER_WORKSPACE, wf::SUBLAYER_DOCKED_ABOVE);
-      LOG(wf::log::LOG_LEVEL_ERROR, "output_changed got SUBLAYER from vec");
-      new_output->workspace->add_view_to_sublayer(view,
-                                                  new_output->workspace->above_layer);
-    }
-
     GVariant *signal_data = g_variant_new("(uuu)", view->get_id(),
                                           old_output->get_id(),
                                           new_output->get_id());
@@ -378,14 +357,6 @@ public:
 
     wf::output_t *old_output = signal->old_output;
     wf::output_t *new_output = signal->new_output;
-
-    if (view->desired_layer == 1)
-    {
-      LOG(wf::log::LOG_LEVEL_ERROR, "output_changed move SUBLAYER!!!",
-          "remove from old output");
-      old_output->workspace->add_view(view,
-                                      (wf::layer_t)old_output->workspace->get_view_layer(view));
-    }
 
     //    no one listens
     // GVariant *signal_data = g_variant_new("(uuu)", view->get_id(),
@@ -472,11 +443,6 @@ public:
     wayfire_view m_view = signal->view;
     const bool minimized = signal->state;
 
-    if (m_view->desired_layer == 1 && !minimized)
-    {
-      m_view->get_output()->workspace->add_view_to_sublayer(m_view,
-                                                            m_view->get_output()->workspace->above_layer);
-    }
     GVariant *signal_data = g_variant_new("(ub)",
                                           m_view->get_id(),
                                           minimized);
@@ -508,50 +474,9 @@ public:
     wayfire_view view = signal->view;
     wf::output_t *active_output = wf::get_core().get_active_output();
     wf::get_core().move_view_to_output(view, active_output);
-
-    if (view->desired_layer == 1)
-    {
-      active_output->workspace->add_view_to_sublayer(view,
-                                                     active_output->workspace->above_layer);
-    }
-    else
-    {
-      active_output->workspace->add_view(view, wf::LAYER_WORKSPACE);
-    }
+    active_output->workspace->add_view(view, wf::LAYER_WORKSPACE);
 
     view->set_activated(true);
-  }};
-
-  wf::signal_connection_t view_hints_changed{[=](wf::signal_data_t *data) {
-    view_hints_changed_signal *signal = static_cast<view_hints_changed_signal *>(data);
-    wayfire_view view = signal->view;
-    bool view_wants_attention = false;
-    if (!view)
-    {
-      LOG(wf::log::LOG_LEVEL_ERROR, "view_hints_changed",
-          "no such view");
-    }
-    LOG(wf::log::LOG_LEVEL_ERROR, "view_hints_changed",
-        view->has_data("view-demands-attention"));
-    LOG(wf::log::LOG_LEVEL_ERROR, "view_hints_changed",
-        view->has_data("view-demands-attention"));
-    LOG(wf::log::LOG_LEVEL_ERROR, "view_hints_changed",
-        view->has_data("view-demands-attention"));
-    LOG(wf::log::LOG_LEVEL_ERROR, "view_hints_changed",
-        view->has_data("view-demands-attention"));
-    LOG(wf::log::LOG_LEVEL_ERROR, "view_hints_changed",
-        view->has_data("view-demands-attention"));
-    LOG(wf::log::LOG_LEVEL_ERROR, "view_hints_changed",
-        view->has_data("view-demands-attention"));
-
-    if (view->has_data("view-demands-attention"))
-      view_wants_attention = true;
-
-    GVariant *signal_data = g_variant_new("(ub)",
-                                          view->get_id(),
-                                          view_wants_attention);
-    g_variant_ref(signal_data);
-    bus_emit_signal("view_attention_changed", signal_data);
   }};
 
   wf::signal_connection_t output_detach_view{[=](wf::signal_data_t *data) {
@@ -636,9 +561,6 @@ public:
     wf_output->connect_signal("view-self-request-focus",
                               &view_self_request_focus);
 
-    wf_output->connect_signal("view-hints-changed",
-                              &view_hints_changed);
-
     wf_output->connect_signal("resize-request",
                               &output_view_resizing);
 
@@ -652,10 +574,6 @@ public:
 
     wf_output->connect_signal("layer-attach-view", &role_changed);
     wf_output->connect_signal("layer-detach-view", &role_changed);
-
-    if (wf_output->workspace->above_layer == nullptr)
-      wf_output->workspace->above_layer = wf_output->workspace->create_sublayer(wf::LAYER_WORKSPACE,
-                                                                                wf::SUBLAYER_DOCKED_ABOVE);
     connected_wf_outputs.insert(wf_output);
 
     // nonstd::observer_ptr<wf::sublayer_t> sticky_layer;

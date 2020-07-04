@@ -102,43 +102,6 @@ get_output_from_output_id(uint output_id)
 
     return nullptr;
 }
-static void local_thread_request_view_sticky(void *data)
-{
-    wayfire_view view = get_view_from_view_id(queued_view_id);
-
-    if (!view || view == nullptr || view->role != wf::VIEW_ROLE_TOPLEVEL)
-    {
-        return;
-    }
-    wf::output_t *output = view->get_output();
-    // auto sticky_layer = get_sticky_layer_from_output_id(output->get_id());
-
-    if (queued_view_param)
-    {
-        output->workspace->add_view_to_sublayer(view, output->workspace->above_layer);
-        view->desired_layer = 1;
-    }
-    else
-    {
-        output->workspace->add_view(view,
-                                    (wf::layer_t)output->workspace->get_view_layer(view));
-        view->desired_layer = 2;
-    }
-    LOG(wf::log::LOG_LEVEL_ERROR, "make view sticky: ",
-        view->get_id(),
-        " desired_layer should be", view->desired_layer);
-
-    GVariant *signal_data;
-    signal_data = g_variant_new("(uu)", view->get_id(),
-                                view->desired_layer);
-    g_dbus_connection_emit_signal(dbus_connection,
-                                  nullptr,
-                                  "/org/wayland/compositor",
-                                  "org.wayland.compositor",
-                                  "view_layer_changed",
-                                  signal_data,
-                                  nullptr);
-}
 
 static void local_thread_minimize(void *data)
 {
@@ -236,10 +199,10 @@ static void local_thread_view_focus(void *data)
 static void local_thread_change_view_minimize_hint(void *data)
 {
     guint view_id;
-    guint x;
-    guint y;
-    guint width;
-    guint height;
+    int x;
+    int y;
+    int width;
+    int height;
 
     g_variant_get((GVariant *)data, "(uuuuu)", &view_id, &x, &y, &width, &height);
     wayfire_view view = get_view_from_view_id(view_id);
@@ -269,8 +232,8 @@ static void local_thread_view_close(void *data)
 static void local_thread_change_view_workspace(void *data)
 {
     guint view_id;
-    guint new_workspace_x = 0;
-    guint new_workspace_y = 0;
+    int new_workspace_x = 0;
+    int new_workspace_y = 0;
     g_variant_get((GVariant *)data, "(uuu)", &view_id, &new_workspace_x, &new_workspace_y);
     wayfire_view view = get_view_from_view_id(view_id);
     wf::point_t new_workspace_coord = {new_workspace_x, new_workspace_y};
@@ -298,8 +261,8 @@ static void local_thread_change_view_output(void *data)
 static void local_thread_change_workspace_output(void *data)
 {
     guint output_id;
-    guint new_workspace_x;
-    guint new_workspace_y;
+    int new_workspace_x;
+    int new_workspace_y;
     g_variant_get((GVariant *)data, "(uuu)", &output_id, &new_workspace_x, &new_workspace_y);
     wf::output_t *output = get_output_from_output_id(output_id);
     wf::point_t new_workspace_coord = {new_workspace_x, new_workspace_y};
@@ -312,8 +275,8 @@ static void local_thread_change_workspace_output(void *data)
 
 static void local_thread_change_workspace_all_outputs(void *data)
 {
-    guint new_workspace_x;
-    guint new_workspace_y;
+    int new_workspace_x;
+    int new_workspace_y;
     g_variant_get((GVariant *)data, "(uu)", &new_workspace_x, &new_workspace_y);
     wf::point_t new_workspace_coord = {new_workspace_x, new_workspace_y};
 
@@ -631,37 +594,8 @@ static void handle_method_call(GDBusConnection *connection, const gchar *sender,
 {
     LOG(wf::log::LOG_LEVEL_ERROR, "handle_method_call bus called", method_name);
 
-    if (g_strcmp0(method_name, "request_view_sticky") == 0)
-    {
-        guint view_id;
-        bool sticky;
-        g_variant_get(parameters, "(ub)", &view_id, &sticky);
-
-        queued_view_id = view_id;
-        queued_view_param = sticky;
-        wayfire_view view = get_view_from_view_id(view_id);
-
-        /*************************************************************
-         * For some glorious reasons if parameters is passed to
-         * local_thread_request_view_sticky data will be invalid
-         * 
-         * Beware of crashes if before a view is made sticky or not sticky
-         * if another output is focused or some other stuff happens 
-         * compositor might crash... so it is not a good test case
-         * for doing stuff very fast while doing other stuff
-         *************************************************************/
-
-        wl_event_loop_add_idle(wf::get_core().ev_loop,
-                               local_thread_request_view_sticky,
-                               nullptr);
-
-        g_dbus_method_invocation_return_value(invocation,
-                                              nullptr);
-        return;
-    }
-
     /*************** View Actions ****************/
-    else if (g_strcmp0(method_name, "minimize_view") == 0)
+    if (g_strcmp0(method_name, "minimize_view") == 0)
     {
         g_variant_ref(parameters);
         wl_event_loop_add_idle(wf::get_core().ev_loop,
@@ -926,23 +860,6 @@ static void handle_method_call(GDBusConnection *connection, const gchar *sender,
 
         if (view)
             response = g_strdup_printf(view->get_app_id().c_str());
-
-        g_dbus_method_invocation_return_value(invocation,
-                                              g_variant_new("(s)",
-                                                            response));
-        if (view)
-            g_free(response);
-        return;
-    }
-    else if (g_strcmp0(method_name, "query_view_app_id_gtk_shell") == 0)
-    {
-        guint view_id;
-        gchar *response = "nullptr";
-        g_variant_get(parameters, "(u)", &view_id);
-        wayfire_view view = get_view_from_view_id(view_id);
-
-        if (view)
-            response = g_strdup_printf(view->get_app_id_gtk_shell().c_str());
 
         g_dbus_method_invocation_return_value(invocation,
                                               g_variant_new("(s)",
@@ -1311,21 +1228,6 @@ static void handle_method_call(GDBusConnection *connection, const gchar *sender,
                                                             pid,
                                                             uid,
                                                             gid));
-        return;
-    }
-    else if (g_strcmp0(method_name, "query_view_layer") == 0)
-    {
-        guint view_id;
-        guint response = 0;
-        g_variant_get(parameters, "(u)", &view_id);
-        wayfire_view view = get_view_from_view_id(view_id);
-
-        if (view)
-            response = view->desired_layer;
-
-        g_dbus_method_invocation_return_value(invocation,
-                                              g_variant_new("(u)",
-                                                            response));
         return;
     }
     else if (g_strcmp0(method_name, "query_view_maximized") == 0)

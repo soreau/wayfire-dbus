@@ -1,13 +1,13 @@
 project(
 	'wayfire-plugin-dbus_interface',
-    'c',
+	'c',
 	'cpp',
 	version: '0.1',
 	license: 'MIT',
 	meson_version: '>=0.51.0',
 	default_options: [
 		'cpp_std=c++17',
-        'c_std=c17',
+		'c_std=c11',
 		'warning_level=2',
 		'werror=false',
 	],

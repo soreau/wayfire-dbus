@@ -199,14 +199,14 @@ static void local_thread_view_focus(void *data)
 static void local_thread_change_view_minimize_hint(void *data)
 {
     guint view_id;
-    int x;
-    int y;
-    int width;
-    int height;
+    guint x;
+    guint y;
+    guint width;
+    guint height;
 
     g_variant_get((GVariant *)data, "(uuuuu)", &view_id, &x, &y, &width, &height);
     wayfire_view view = get_view_from_view_id(view_id);
-    wlr_box hint = {x, y, width, height};
+    wlr_box hint = {(int) x, (int) y, (int) width, (int) height};
 
     if (view != nullptr)
     {
@@ -232,11 +232,11 @@ static void local_thread_view_close(void *data)
 static void local_thread_change_view_workspace(void *data)
 {
     guint view_id;
-    int new_workspace_x = 0;
-    int new_workspace_y = 0;
+    guint new_workspace_x = 0;
+    guint new_workspace_y = 0;
     g_variant_get((GVariant *)data, "(uuu)", &view_id, &new_workspace_x, &new_workspace_y);
     wayfire_view view = get_view_from_view_id(view_id);
-    wf::point_t new_workspace_coord = {new_workspace_x, new_workspace_y};
+    wf::point_t new_workspace_coord = {(int) new_workspace_x, (int) new_workspace_y};
 
     if (view != nullptr)
         view->get_output()->workspace->move_to_workspace(view, new_workspace_coord);
@@ -261,11 +261,11 @@ static void local_thread_change_view_output(void *data)
 static void local_thread_change_workspace_output(void *data)
 {
     guint output_id;
-    int new_workspace_x;
-    int new_workspace_y;
+    guint new_workspace_x;
+    guint new_workspace_y;
     g_variant_get((GVariant *)data, "(uuu)", &output_id, &new_workspace_x, &new_workspace_y);
     wf::output_t *output = get_output_from_output_id(output_id);
-    wf::point_t new_workspace_coord = {new_workspace_x, new_workspace_y};
+    wf::point_t new_workspace_coord = {(int) new_workspace_x, (int) new_workspace_y};
 
     if (output != nullptr)
         output->workspace->request_workspace(new_workspace_coord); // Provides animation if available
@@ -275,10 +275,10 @@ static void local_thread_change_workspace_output(void *data)
 
 static void local_thread_change_workspace_all_outputs(void *data)
 {
-    int new_workspace_x;
-    int new_workspace_y;
+    guint new_workspace_x;
+    guint new_workspace_y;
     g_variant_get((GVariant *)data, "(uu)", &new_workspace_x, &new_workspace_y);
-    wf::point_t new_workspace_coord = {new_workspace_x, new_workspace_y};
+    wf::point_t new_workspace_coord = {(int) new_workspace_x, (int) new_workspace_y};
 
     std::vector<wf::output_t *> wf_outputs = wf::get_core().output_layout->get_outputs();
 

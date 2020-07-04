@@ -84,12 +84,6 @@ public:
       wf_output->connect_signal("viewport-changed",
                                 &output_workspace_changed);
 
-      wf_output->connect_signal("layer-attach-view",
-                                &role_changed);
-
-      wf_output->connect_signal("layer-detach-view",
-                                &role_changed);
-
       wf_output->connect_signal("focus-view",
                                 &output_view_focus_changed);
 
@@ -365,29 +359,7 @@ public:
     // g_variant_ref(signal_data);
     // bus_emit_signal("view_output_move_requested", signal_data);
   }};
-  //******************************Custom Slots***************************//
-  wf::signal_connection_t role_changed{[=](wf::signal_data_t *data) {
-    LOG(wf::log::LOG_LEVEL_ERROR, "view_state_changed: role_changed");
-    wayfire_view m_view = get_signaled_view(data);
-    if (m_view == nullptr)
-    {
-      LOG(wf::log::LOG_LEVEL_ERROR, "WAYFIRE BUG: ",
-          "m_view but signaled view is nullptr");
-      return;
-    }
-    uint role = 0;
 
-    if (m_view->role == wf::VIEW_ROLE_TOPLEVEL)
-      role = 1;
-    else if (m_view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT)
-      role = 2;
-    else if (m_view->role == wf::VIEW_ROLE_UNMANAGED)
-      role = 3;
-
-    GVariant *signal_data = g_variant_new("(uu)", m_view->get_id(), role);
-    g_variant_ref(signal_data);
-    bus_emit_signal("view_role_changed", signal_data);
-  }};
   //******************************Output Slots***************************//
   wf::signal_connection_t output_configuration_changed{[=](wf::signal_data_t *data) {
     LOG(wf::log::LOG_LEVEL_ERROR, "output_configuration_changed VIEW: ", "DBUS PLUGIN", 32);
@@ -453,6 +425,8 @@ public:
   wf::signal_connection_t output_view_focus_changed{[=](wf::signal_data_t *data) {
     focus_view_signal *signal = static_cast<focus_view_signal *>(data);
     wayfire_view view = signal->view;
+    if (!view)
+      return;
     uint view_id = view->get_id();
 
     if (view_id == focused_view_id || view->role != wf::VIEW_ROLE_TOPLEVEL)
@@ -571,9 +545,6 @@ public:
     // utput.cpp:        emit_signal("focus-view", &data);
     // active_output->emit_signal("output-gain-focus", nullptr);
     //  view->get_output()->emit_signal("wm-focus-request", &data);
-
-    wf_output->connect_signal("layer-attach-view", &role_changed);
-    wf_output->connect_signal("layer-detach-view", &role_changed);
     connected_wf_outputs.insert(wf_output);
 
     // nonstd::observer_ptr<wf::sublayer_t> sticky_layer;

@@ -528,10 +528,6 @@ const gchar introspection_xml[] =
     "    <signal name='output_view_resizing'>"
     "      <arg type='s' name='test'/>"
     "    </signal>"
-    "    <signal name='view_role_changed'>"
-    "      <arg type='u' name='view_id'/>"
-    "      <arg type='u' name='view_role'/>"
-    "    </signal>"
 
     /****
     * Core Input Events

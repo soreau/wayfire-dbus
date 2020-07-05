@@ -48,8 +48,6 @@ class dbus_interface_t
 public:
   void constrain_pointer(const bool constrain)
   {
-    struct wlr_xwayland_surface *xsurf;
-
     return;
   }
   dbus_interface_t()
@@ -101,7 +99,7 @@ public:
       //                                                      wf::SUBLAYER_DOCKED_ABOVE);
       // sticky_layers.push_back(sticky_layer);
     }
-    LOG(wf::log::LOG_LEVEL_ERROR, "output count: " + wf::get_core().output_layout->get_outputs().size(), "DBUS PLUGIN", 32);
+    LOG(wf::log::LOG_LEVEL_ERROR, "output count: " + std::to_string(wf::get_core().output_layout->get_outputs().size()));
 
     for (wayfire_view m_view : wf::get_core().get_all_views())
     {
@@ -186,7 +184,6 @@ public:
   }
   wf::signal_connection_t pointer_button_signal{[=](wf::signal_data_t *data) {
     LOG(wf::log::LOG_LEVEL_ERROR, "Some input signal:");
-    auto ev = static_cast<wf::input_event_signal<wlr_event_pointer_button> *>(data);
 
     // nonstd::observer_ptr<input_event_signal> device;
     // device = static_cast<nonstd::observer_ptr<input_event_signal>>(data);
@@ -345,12 +342,7 @@ public:
   }};
   wf::signal_connection_t view_output_move_requested{[=](wf::signal_data_t *data) {
     // See force fullscreen
-    LOG(wf::log::LOG_LEVEL_ERROR, "output_changed not connected signal may cause crash?: ", "DBUS PLUGIN", 32);
-    wf::view_move_to_output_signal *signal = static_cast<wf::view_move_to_output_signal *>(data);
-    wayfire_view view = signal->view;
-
-    wf::output_t *old_output = signal->old_output;
-    wf::output_t *new_output = signal->new_output;
+    LOG(wf::log::LOG_LEVEL_ERROR, "output_changed not connected signal may cause crash?");
 
     //    no one listens
     // GVariant *signal_data = g_variant_new("(uuu)", view->get_id(),

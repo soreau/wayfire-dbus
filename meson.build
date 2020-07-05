@@ -25,6 +25,10 @@ add_project_arguments(['-DWLR_USE_UNSTABLE'], language: ['cpp', 'c'])
 add_project_arguments(['-DWAYFIRE_PLUGIN'], language: ['cpp', 'c'])
 add_project_link_arguments(['-rdynamic'], language:'cpp')
 
+add_project_arguments(['-Wno-writable-strings'], language: ['cpp'])
+add_project_arguments(['-Wno-unused-parameter'], language: ['cpp'])
+add_project_arguments(['-Wno-format-security'], language: ['cpp'])
+
 ######################### Finish ###########################
 pms = shared_module('dbus_interface', 'dbus_interface.cpp',
     dependencies: [wayfire, wlroots, gio, xcb, xcbres],

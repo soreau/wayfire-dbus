@@ -817,7 +817,6 @@ static void handle_method_call(GDBusConnection *connection, const gchar *sender,
     else if (g_strcmp0(method_name, "query_output_workspace") == 0)
     {
         guint output_id;
-        gchar *response = "nullptr";
         g_variant_get(parameters, "(u)", &output_id);
         wf::output_t *wf_output = get_output_from_output_id(output_id);
         wf::point_t ws = wf_output->workspace->get_current_workspace();
@@ -1164,7 +1163,7 @@ static void handle_method_call(GDBusConnection *connection, const gchar *sender,
             if (wlr_surface_is_xwayland_surface(main_surface))
             {
                 struct wlr_xwayland_surface *main_xsurf;
-                xcb_res_client_id_spec_t spec = {0};
+                xcb_res_client_id_spec_t spec = {};
                 xcb_generic_error_t *err = NULL;
                 xcb_res_query_client_ids_cookie_t cookie;
                 xcb_res_query_client_ids_reply_t *reply;
@@ -1289,7 +1288,7 @@ static void handle_method_call(GDBusConnection *connection, const gchar *sender,
     else if (g_strcmp0(method_name, "query_view_fullscreen") == 0)
     {
         guint view_id;
-        bool response;
+        bool response = false;
         g_variant_get(parameters, "(u)", &view_id);
         wayfire_view view = get_view_from_view_id(view_id);
 
@@ -1504,7 +1503,8 @@ static gboolean handle_set_property(GDBusConnection *connection,
 static const GDBusInterfaceVTable interface_vtable = {
     handle_method_call,
     handle_get_property,
-    handle_set_property};
+    handle_set_property,
+    {0}};
 
 static gboolean bus_emit_signal(gchar *signal_name, GVariant *signal_data)
 {

@@ -253,7 +253,7 @@ static void local_thread_change_view_output(void *data)
     wf::output_t *output = get_output_from_output_id(output_id);
 
     if (view != nullptr && output != nullptr)
-        wf::get_core().move_view_to_output(view, output);
+        wf::get_core().move_view_to_output(view, output, true);
 
     g_variant_unref((GVariant *)data);
 }

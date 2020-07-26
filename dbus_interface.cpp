@@ -55,7 +55,7 @@ public:
     /************* Connect all signals for already existing objects *************/
     for (wf::output_t *wf_output : wf_outputs)
     {
-      wf_output->connect_signal("map-view",
+      wf_output->connect_signal("view-mapped",
                                 &output_view_added);
 
       wf_output->connect_signal("output-configuration-changed",
@@ -64,13 +64,13 @@ public:
       wf_output->connect_signal("view-minimize-request",
                                 &output_view_minimized);
 
-      wf_output->connect_signal("view-maximized-request",
+      wf_output->connect_signal("view-tile-request",
                                 &output_view_maximized);
 
-      wf_output->connect_signal("move-request",
+      wf_output->connect_signal("view-move-request",
                                 &output_view_moving);
 
-      wf_output->connect_signal("resize-request",
+      wf_output->connect_signal("view-resize-request",
                                 &output_view_resizing);
 
       wf_output->connect_signal("view-change-viewport",
@@ -82,7 +82,7 @@ public:
       wf_output->connect_signal("viewport-changed",
                                 &output_workspace_changed);
 
-      wf_output->connect_signal("focus-view",
+      wf_output->connect_signal("view-focused",
                                 &output_view_focus_changed);
 
       wf_output->connect_signal("view-fullscreen-request",
@@ -112,7 +112,7 @@ public:
       m_view->connect_signal("geometry-changed",
                              &view_geometry_changed);
 
-      m_view->connect_signal("unmap",
+      m_view->connect_signal("unmapped",
                              &view_closed);
 
       m_view->connect_signal("tiled",
@@ -121,10 +121,10 @@ public:
       // m_view->connect_signal("fullscreen", &view_fullscreened);
 
       // this->emit_signal("decoration-state-updated", &data);
-      // view->emit_signal("map", &data);
-      // emit_signal("unmap", &data);
+      // view->emit_signal("mapped", &data);
+      // emit_signal("unmapped", &data);
       // emit_signal("disappeared", &data);
-      // emit_signal("pre-unmap", &data);
+      // emit_signal("pre-unmapped", &data);
     }
     wf::get_core().connect_signal("view-move-to-output",
                                   &view_output_move_requested);
@@ -221,7 +221,7 @@ public:
     m_view->connect_signal("app-id-changed", &view_app_id_changed);
     m_view->connect_signal("title-changed", &view_title_changed);
     m_view->connect_signal("geometry-changed", &view_geometry_changed);
-    m_view->connect_signal("unmap", &view_closed);
+    m_view->connect_signal("unmapped", &view_closed);
     m_view->connect_signal("tiled", &view_tiled);
 
     //wf_gtk_shell s = wf::get_core().gtk_shell;
@@ -304,7 +304,7 @@ public:
   wf::signal_connection_t view_fullscreen_changed{[=](wf::signal_data_t *data) {
     LOG(wf::log::LOG_LEVEL_ERROR, "view_state_changed: view_fullscreened");
 
-    view_fullscreen_signal *signal = static_cast<view_fullscreen_signal *>(data);
+    wf::view_fullscreen_signal *signal = static_cast<wf::view_fullscreen_signal *>(data);
     wayfire_view m_view = signal->view;
 
     GVariant *signal_data = g_variant_new("(ub)", m_view->get_id(), signal->state);
@@ -329,7 +329,7 @@ public:
 
   wf::signal_connection_t view_output_moved{[=](wf::signal_data_t *data) {
     LOG(wf::log::LOG_LEVEL_ERROR, "view_output_moved: ", "DBUS PLUGIN");
-    wf::view_move_to_output_signal *signal = static_cast<wf::view_move_to_output_signal *>(data);
+    wf::view_pre_moved_to_output_signal *signal = static_cast<wf::view_pre_moved_to_output_signal *>(data);
     wayfire_view view = signal->view;
     wf::output_t *old_output = signal->old_output;
     wf::output_t *new_output = signal->new_output;
@@ -374,7 +374,7 @@ public:
   }};
 
   wf::signal_connection_t output_workspace_changed{[=](wf::signal_data_t *data) {
-    change_viewport_signal *signal = static_cast<change_viewport_signal *>(data);
+    wf::workspace_changed_signal *signal = static_cast<wf::workspace_changed_signal *>(data);
     int newHorizontalWorkspace = signal->new_viewport.x;
     int newVerticalWorkspace = signal->new_viewport.y;
     wf::output_t *output = signal->output;
@@ -389,7 +389,7 @@ public:
 
   wf::signal_connection_t output_view_maximized{[=](wf::signal_data_t *data) {
     LOG(wf::log::LOG_LEVEL_ERROR, "view_state_changed: output_view_minimized");
-    view_tiled_signal *signal = static_cast<view_tiled_signal *>(data);
+    wf::view_tile_request_signal *signal = static_cast<wf::view_tile_request_signal *>(data);
     wayfire_view m_view = signal->view;
     const bool maximized = (signal->edges == wf::TILED_EDGES_ALL);
 
@@ -403,7 +403,7 @@ public:
   wf::signal_connection_t output_view_minimized{[=](wf::signal_data_t *data) {
     LOG(wf::log::LOG_LEVEL_ERROR, "view_state_changed: output_view_minimized");
 
-    view_minimize_request_signal *signal = static_cast<view_minimize_request_signal *>(data);
+    wf::view_minimize_request_signal *signal = static_cast<wf::view_minimize_request_signal *>(data);
     wayfire_view m_view = signal->view;
     const bool minimized = signal->state;
 
@@ -415,7 +415,7 @@ public:
   }};
 
   wf::signal_connection_t output_view_focus_changed{[=](wf::signal_data_t *data) {
-    focus_view_signal *signal = static_cast<focus_view_signal *>(data);
+    wf::focus_view_signal *signal = static_cast<wf::focus_view_signal *>(data);
     wayfire_view view = signal->view;
     if (!view)
       return;
@@ -436,10 +436,10 @@ public:
     bus_emit_signal("view_focus_changed", signal_data);
   }};
   wf::signal_connection_t view_self_request_focus{[=](wf::signal_data_t *data) {
-    view_self_request_focus_signal *signal = static_cast<view_self_request_focus_signal *>(data);
+    wf::view_self_request_focus_signal *signal = static_cast<wf::view_self_request_focus_signal *>(data);
     wayfire_view view = signal->view;
     wf::output_t *active_output = wf::get_core().get_active_output();
-    wf::get_core().move_view_to_output(view, active_output);
+    wf::get_core().move_view_to_output(view, active_output, true);
     active_output->workspace->add_view(view, wf::LAYER_WORKSPACE);
 
     view->set_activated(true);
@@ -503,7 +503,7 @@ public:
     wf_output->connect_signal("view-fullscreen-request",
                               &view_fullscreen_changed);
 
-    wf_output->connect_signal("map-view",
+    wf_output->connect_signal("view-mapped",
                               &output_view_added);
 
     wf_output->connect_signal("output-configuration-changed",
@@ -512,10 +512,10 @@ public:
     wf_output->connect_signal("view-minimize-request",
                               &output_view_minimized);
 
-    wf_output->connect_signal("view-maximized-request",
+    wf_output->connect_signal("view-tile-request",
                               &output_view_maximized);
 
-    wf_output->connect_signal("move-request",
+    wf_output->connect_signal("view-move-request",
                               &output_view_moving);
 
     wf_output->connect_signal("view-change-viewport",
@@ -527,14 +527,14 @@ public:
     wf_output->connect_signal("view-self-request-focus",
                               &view_self_request_focus);
 
-    wf_output->connect_signal("resize-request",
+    wf_output->connect_signal("view-resize-request",
                               &output_view_resizing);
 
     // wf_output->connect_signal("fullscreen-layer-focused", &fullscreen_focus_changed);
     // wf_output->connect_signal("set-workspace-request", &output_workspace_changed);
-    wf_output->connect_signal("focus-view", &output_view_focus_changed);
+    wf_output->connect_signal("view-focused", &output_view_focus_changed);
     //    view->get_output()->emit_signal("wm-focus-request", &data);
-    // utput.cpp:        emit_signal("focus-view", &data);
+    // utput.cpp:        emit_signal("view-focused", &data);
     // active_output->emit_signal("output-gain-focus", nullptr);
     //  view->get_output()->emit_signal("wm-focus-request", &data);
     connected_wf_outputs.insert(wf_output);
